@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QVBoxLayout,
     QHBoxLayout,
+    QTextEdit,
 )
 from PyQt5.QtCore import QTimer, QTime, Qt, QUrl
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
@@ -31,13 +32,9 @@ class App(QWidget):
         self.timer.timeout.connect(self.update_timer)
         self.remaining_time = QTime(0, 0, 0)
 
-        # Cargar último tiempo guardado
-        last_time = self.load_last_time()
-
         # Input
         self.time_input = QLineEdit(self)
-        self.time_input.setPlaceholderText("Tiempo en formato hh:mm:ss, mm:ss o ss")
-        self.time_input.setText(last_time)
+        self.time_input.setPlaceholderText("Formato hh:mm:ss, mm:ss o ss")
 
         # Botón de iniciar/detener
         self.start_stop_button = QPushButton("Iniciar", self)
@@ -47,6 +44,10 @@ class App(QWidget):
         self.remaining_label = QLabel("00:00:00", self)
         self.remaining_label.setAlignment(Qt.AlignCenter)
         self.remaining_label.setStyleSheet("font-size: 40px; font-weight: bold;")
+
+        # Área de anotaciones
+        self.notes_text = QTextEdit(self)
+        self.notes_text.setPlaceholderText("Escribe tus anotaciones aquí...")
 
         # Layout principal
         main_layout = QVBoxLayout()
@@ -59,8 +60,12 @@ class App(QWidget):
         # Añadir widgets al layout principal
         main_layout.addLayout(input_layout)
         main_layout.addWidget(self.remaining_label)
+        main_layout.addWidget(self.notes_text)
 
         self.setLayout(main_layout)
+
+        # Cargar datos guardados
+        self.load_last_data()
 
     def parse_input_time(self):
         input_time = self.time_input.text().strip()
@@ -103,7 +108,6 @@ class App(QWidget):
         else:
             self.remaining_time = self.parse_input_time()
             self.update_remaining_label()
-            self.save_last_time(self.time_input.text().strip())
             self.timer.start(1000)
             self.start_stop_button.setText("Detener")
 
@@ -133,17 +137,26 @@ class App(QWidget):
             if self.play_count < 2:
                 self.player.play()
 
-    def save_last_time(self, time_str):
-        data = {"last_time": time_str}
+    def save_last_data(self):
+        data = {
+            "last_time": self.time_input.text().strip(),
+            "notes": self.notes_text.toPlainText(),
+        }
         with open("config.json", "w") as file:
             json.dump(data, file)
 
-    def load_last_time(self):
+    def load_last_data(self):
         if os.path.exists("config.json"):
             with open("config.json", "r") as file:
                 data = json.load(file)
-                return data.get("last_time", "")
-        return ""
+                if hasattr(self, "time_input"):
+                    self.time_input.setText(data.get("last_time", ""))
+                if hasattr(self, "notes_text"):
+                    self.notes_text.setPlainText(data.get("notes", ""))
+
+    def closeEvent(self, event):
+        self.save_last_data()
+        event.accept()
 
 
 app = QApplication(sys.argv)
