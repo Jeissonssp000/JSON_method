@@ -8,8 +8,8 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QTextEdit,
 )
-from PyQt5.QtCore import QTimer, QTime, Qt, QUrl
-from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
+from PyQt5.QtCore import QTimer, QTime, Qt
+import pygame
 import json
 import sys
 import os
@@ -18,11 +18,12 @@ import os
 class App(QWidget):
     def __init__(self):
         super().__init__()
+        pygame.mixer.init()
         self.initUI()
 
     def initUI(self):
-        self.setWindowTitle("Temporizador")
-        self.setGeometry(100, 100, 300, 200)
+        self.setWindowTitle("JSON_method")
+        self.setGeometry(100, 100, 210, 200)
 
         # Hacer que la ventana sea flotante
         self.setWindowFlag(Qt.WindowStaysOnTopHint)
@@ -34,7 +35,10 @@ class App(QWidget):
 
         # Input
         self.time_input = QLineEdit(self)
-        self.time_input.setPlaceholderText("Formato hh:mm:ss, mm:ss o ss")
+        self.time_input.setPlaceholderText("hh:mm:ss, mm:ss o ss")
+
+        # Conectar el evento keyPressEvent al QLineEdit
+        self.time_input.installEventFilter(self)
 
         # Botón de iniciar/detener
         self.start_stop_button = QPushButton("Iniciar", self)
@@ -66,6 +70,14 @@ class App(QWidget):
 
         # Cargar datos guardados
         self.load_last_data()
+
+    def eventFilter(self, source, event):
+        # Detectar si el foco está en el QLineEdit y se presiona espacio o enter
+        if source == self.time_input and event.type() == event.KeyPress:
+            if event.key() in (Qt.Key_Space, Qt.Key_Return, Qt.Key_Enter):
+                self.start_stop_timer()
+                return True
+        return super().eventFilter(source, event)
 
     def parse_input_time(self):
         input_time = self.time_input.text().strip()
@@ -112,9 +124,11 @@ class App(QWidget):
             self.start_stop_button.setText("Detener")
 
     def update_timer(self):
-        if self.remaining_time == QTime(0, 0, 0):
+        if self.remaining_time <= QTime(0, 0, 1):
             self.timer.stop()
             self.start_stop_button.setText("Iniciar")
+            self.remaining_time = QTime(0, 0, 0)
+            self.update_remaining_label()
             self.play_sound()
         else:
             self.remaining_time = self.remaining_time.addSecs(-1)
@@ -125,17 +139,11 @@ class App(QWidget):
 
     def play_sound(self):
         file_path = os.path.abspath("soft.wav")
-        self.player = QMediaPlayer()
-        self.player.setMedia(QMediaContent(QUrl.fromLocalFile(file_path)))
-        self.player.stateChanged.connect(self.handle_state_change)
-        self.play_count = 0
-        self.player.play()
-
-    def handle_state_change(self, state):
-        if state == QMediaPlayer.StoppedState:
-            self.play_count += 1
-            if self.play_count < 2:
-                self.player.play()
+        if not os.path.exists(file_path):
+            print(f"Archivo de sonido no encontrado: {file_path}")
+            return
+        pygame.mixer.music.load(file_path)
+        pygame.mixer.music.play()
 
     def save_last_data(self):
         data = {

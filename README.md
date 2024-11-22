@@ -13,7 +13,7 @@ Este documento describe cómo crear un ejecutable de una aplicación Python util
 - **macOS**: Genera aplicaciones `.app` que pueden ejecutarse en sistemas macOS.
 
 ## Requisitos Previos para el Repo
-- **Python 3.9.18** debe estar instalado en el sistema.
+- **Python 3.12.7** debe estar instalado en el sistema. (opt: pyenv ;D)
 - **Paquetes** instalar con:
   
   ```bash
