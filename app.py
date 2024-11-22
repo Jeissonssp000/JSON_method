@@ -199,7 +199,7 @@ class App(QWidget):
 
     def closeEvent(self, event):
         if self.timer.isActive():
-            self.save_last_data()
+            self.save_data()
         event.accept()
 
 
