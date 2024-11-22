@@ -10,20 +10,27 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import QTimer, QTime, Qt
 import datetime
+import tempfile
 import pygame
+import base64
 import json
 import sys
 import os
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
+src_dir = os.path.join(script_dir, "src")
+if src_dir not in sys.path:
+    sys.path.insert(0, src_dir)
+
+from src.audio import AUDIO_BASE64
 
 
 class App(QWidget):
     def __init__(self):
         super().__init__()
         pygame.mixer.init()
-        file_path = os.path.abspath("soft.wav")
-        if not os.path.exists(file_path):
-            print(f"Archivo de sonido no encontrado: {file_path}")
-            return
+        self.audio_file = self.decode_audio_to_temp()
+        pygame.mixer.music.load(self.audio_file)
 
         self.data_dir = "app_data"
         if not os.path.exists(self.data_dir):
@@ -31,7 +38,6 @@ class App(QWidget):
 
         self.remaining_time = QTime(0, 0, 0)
         self.initial_time = QTime(0, 0, 0)
-        pygame.mixer.music.load(file_path)
         self.initUI()
 
     def initUI(self):
@@ -177,9 +183,6 @@ class App(QWidget):
             json.dump(config_data, config_file, indent=4)
 
     def save_activity(self):
-        """
-        Guarda el registro de actividades en un archivo diario.
-        """
         # Obtener la fecha y hora actuales
         current_date = datetime.datetime.now().strftime("%Y-%m-%d")
         current_time = datetime.datetime.now().strftime("%H:%M:%S")
@@ -215,10 +218,19 @@ class App(QWidget):
                 except json.JSONDecodeError:
                     pass
 
+    def decode_audio_to_temp(self):
+        audio_data = base64.b64decode(AUDIO_BASE64)
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
+        temp_file.write(audio_data)
+        temp_file.close()
+        return temp_file.name
+
     def closeEvent(self, event):
         self.save_config()
         if self.timer.isActive():
             self.save_activity()
+        if os.path.exists(self.audio_file):
+            os.remove(self.audio_file)
         event.accept()
 
 
