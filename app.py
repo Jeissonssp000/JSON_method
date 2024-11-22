@@ -24,10 +24,14 @@ class App(QWidget):
         if not os.path.exists(file_path):
             print(f"Archivo de sonido no encontrado: {file_path}")
             return
-        else:
-            pygame.mixer.music.load(file_path)
+
+        self.data_dir = "app_data"
+        if not os.path.exists(self.data_dir):
+            os.makedirs(self.data_dir)
+
         self.remaining_time = QTime(0, 0, 0)
-        self.initial_time = QTime(0, 0, 0)  # Tiempo programado inicialmente
+        self.initial_time = QTime(0, 0, 0)
+        pygame.mixer.music.load(file_path)
         self.initUI()
 
     def initUI(self):
@@ -126,7 +130,7 @@ class App(QWidget):
         if self.timer.isActive():
             self.timer.stop()
             self.start_stop_button.setText("Iniciar")
-            self.save_data()  # Guardar datos al detener
+            self.save_activity()  # Guardar datos al detener
         else:
             self.initial_time = self.parse_input_time()
             self.remaining_time = self.initial_time
@@ -140,7 +144,7 @@ class App(QWidget):
             self.start_stop_button.setText("Iniciar")
             self.remaining_time = QTime(0, 0, 0)
             self.update_remaining_label()
-            self.save_data()
+            self.save_activity()
             pygame.mixer.music.play()
         else:
             self.remaining_time = self.remaining_time.addSecs(-1)
@@ -163,33 +167,47 @@ class App(QWidget):
         elapsed_seconds = initial_seconds - remaining_seconds
         return QTime(0, 0, 0).addSecs(elapsed_seconds).toString("hh:mm:ss")
 
-    def save_data(self):
-        current_time = datetime.datetime.now().strftime("%Y-%m-%d,%H:%M:%S")
+    def save_config(self):
+        config_data = {
+            "last_time": self.time_input.text(),
+            "notes": self.notes_text.toPlainText(),
+        }
+
+        with open("app_data/config.json", "w") as config_file:
+            json.dump(config_data, config_file, indent=4)
+
+    def save_activity(self):
+        """
+        Guarda el registro de actividades en un archivo diario.
+        """
+        # Obtener la fecha y hora actuales
+        current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+        current_time = datetime.datetime.now().strftime("%H:%M:%S")
         elapsed_time = self.calculate_elapsed_time()
         notes = self.notes_text.toPlainText()
 
-        data = {}
-        if os.path.exists("config.json"):
-            with open("config.json", "r") as file:
+        # Archivo diario con el formato YYYY-MM-DD.json
+        activity_file = f"app_data/{current_date}.json"
+        activity_data = {}
+
+        # Cargar datos existentes si el archivo ya existe
+        if os.path.exists(activity_file):
+            with open(activity_file, "r") as activity_file_content:
                 try:
-                    data = json.load(file)
+                    activity_data = json.load(activity_file_content)
                 except json.JSONDecodeError:
-                    data = {}
+                    activity_data = {}
 
-        # Actualizar last_time y notes
-        data["last_time"] = self.time_input.text()
-        data["notes"] = notes
+        # Agregar la actividad con la hora como clave
+        activity_data[current_time] = f"{elapsed_time} {notes}"
 
-        # Agregar el tiempo transcurrido con la clave de tiempo actual
-        data[current_time] = f"{elapsed_time} {notes}"
-
-        # Guardar en config.json
-        with open("config.json", "w") as file:
-            json.dump(data, file, indent=4)
+        # Guardar los datos en el archivo diario
+        with open(activity_file, "w") as activity_file_content:
+            json.dump(activity_data, activity_file_content, indent=4)
 
     def load_last_data(self):
-        if os.path.exists("config.json"):
-            with open("config.json", "r") as file:
+        if os.path.exists("app_data/config.json"):
+            with open("app_data/config.json", "r") as file:
                 try:
                     data = json.load(file)
                     self.time_input.setText(data.get("last_time", ""))
@@ -198,8 +216,9 @@ class App(QWidget):
                     pass
 
     def closeEvent(self, event):
+        self.save_config()
         if self.timer.isActive():
-            self.save_data()
+            self.save_activity()
         event.accept()
 
 
