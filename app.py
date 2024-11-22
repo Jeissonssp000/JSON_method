@@ -12,6 +12,7 @@ from PyQt5.QtCore import QTimer, QTime, Qt
 import sys
 from src.audio_handler import AudioHandler
 from src.data_handler import DataHandler
+from src.flash_handler import FlashHandler
 from src.audio import AUDIO_BASE64
 
 
@@ -23,6 +24,8 @@ class App(QWidget):
 
         self.remaining_time = QTime(0, 0, 0)
         self.initial_time = QTime(0, 0, 0)
+
+        self.flash_handler = FlashHandler(self)
         self.initUI()
 
     def initUI(self):
@@ -132,6 +135,7 @@ class App(QWidget):
             self.update_remaining_label()
             self.save_activity()
             self.audio_handler.play_audio()
+            self.flash_handler.start_flash()
         else:
             self.remaining_time = self.remaining_time.addSecs(-1)
             self.update_remaining_label()
