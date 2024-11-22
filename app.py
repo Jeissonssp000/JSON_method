@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import (
     QTextEdit,
 )
 from PyQt5.QtCore import QTimer, QTime, Qt
+import datetime
 import pygame
 import json
 import sys
@@ -19,6 +20,14 @@ class App(QWidget):
     def __init__(self):
         super().__init__()
         pygame.mixer.init()
+        file_path = os.path.abspath("soft.wav")
+        if not os.path.exists(file_path):
+            print(f"Archivo de sonido no encontrado: {file_path}")
+            return
+        else:
+            pygame.mixer.music.load(file_path)
+        self.remaining_time = QTime(0, 0, 0)
+        self.initial_time = QTime(0, 0, 0)  # Tiempo programado inicialmente
         self.initUI()
 
     def initUI(self):
@@ -117,8 +126,10 @@ class App(QWidget):
         if self.timer.isActive():
             self.timer.stop()
             self.start_stop_button.setText("Iniciar")
+            self.save_data()  # Guardar datos al detener
         else:
-            self.remaining_time = self.parse_input_time()
+            self.initial_time = self.parse_input_time()
+            self.remaining_time = self.initial_time
             self.update_remaining_label()
             self.timer.start(1000)
             self.start_stop_button.setText("Detener")
@@ -129,41 +140,66 @@ class App(QWidget):
             self.start_stop_button.setText("Iniciar")
             self.remaining_time = QTime(0, 0, 0)
             self.update_remaining_label()
-            self.play_sound()
+            self.save_data()
+            pygame.mixer.music.play()
         else:
             self.remaining_time = self.remaining_time.addSecs(-1)
             self.update_remaining_label()
 
     def update_remaining_label(self):
-        self.remaining_label.setText(f"{self.remaining_time.toString('hh:mm:ss')}")
+        self.remaining_label.setText(self.remaining_time.toString("hh:mm:ss"))
 
-    def play_sound(self):
-        file_path = os.path.abspath("soft.wav")
-        if not os.path.exists(file_path):
-            print(f"Archivo de sonido no encontrado: {file_path}")
-            return
-        pygame.mixer.music.load(file_path)
-        pygame.mixer.music.play()
+    def calculate_elapsed_time(self):
+        initial_seconds = (
+            self.initial_time.hour() * 3600
+            + self.initial_time.minute() * 60
+            + self.initial_time.second()
+        )
+        remaining_seconds = (
+            self.remaining_time.hour() * 3600
+            + self.remaining_time.minute() * 60
+            + self.remaining_time.second()
+        )
+        elapsed_seconds = initial_seconds - remaining_seconds
+        return QTime(0, 0, 0).addSecs(elapsed_seconds).toString("hh:mm:ss")
 
-    def save_last_data(self):
-        data = {
-            "last_time": self.time_input.text().strip(),
-            "notes": self.notes_text.toPlainText(),
-        }
+    def save_data(self):
+        current_time = datetime.datetime.now().strftime("%Y-%m-%d,%H:%M:%S")
+        elapsed_time = self.calculate_elapsed_time()
+        notes = self.notes_text.toPlainText()
+
+        data = {}
+        if os.path.exists("config.json"):
+            with open("config.json", "r") as file:
+                try:
+                    data = json.load(file)
+                except json.JSONDecodeError:
+                    data = {}
+
+        # Actualizar last_time y notes
+        data["last_time"] = self.time_input.text()
+        data["notes"] = notes
+
+        # Agregar el tiempo transcurrido con la clave de tiempo actual
+        data[current_time] = f"{elapsed_time} {notes}"
+
+        # Guardar en config.json
         with open("config.json", "w") as file:
-            json.dump(data, file)
+            json.dump(data, file, indent=4)
 
     def load_last_data(self):
         if os.path.exists("config.json"):
             with open("config.json", "r") as file:
-                data = json.load(file)
-                if hasattr(self, "time_input"):
+                try:
+                    data = json.load(file)
                     self.time_input.setText(data.get("last_time", ""))
-                if hasattr(self, "notes_text"):
                     self.notes_text.setPlainText(data.get("notes", ""))
+                except json.JSONDecodeError:
+                    pass
 
     def closeEvent(self, event):
-        self.save_last_data()
+        if self.timer.isActive():
+            self.save_last_data()
         event.accept()
 
 
