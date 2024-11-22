@@ -1,45 +1,49 @@
-import os
 import json
+import os
 import datetime
 
 
 class DataHandler:
-    def __init__(self, base_dir="app_data"):
-        self.base_dir = base_dir
-        self.config_file = os.path.join(self.base_dir, "config.json")
+    def __init__(self, data_dir="app_data"):
+        self.data_dir = data_dir
+        if not os.path.exists(self.data_dir):
+            os.makedirs(self.data_dir)
 
-        # Crear la carpeta base si no existe
-        if not os.path.exists(self.base_dir):
-            os.makedirs(self.base_dir)
+    def save_config(self, time_input, notes_text):
+        config_data = {
+            "last_time": time_input,
+            "notes": notes_text,
+        }
 
-    def save_config(self, last_time, notes):
-        config_data = {"last_time": last_time, "notes": notes}
-        with open(self.config_file, "w") as file:
-            json.dump(config_data, file, indent=4)
+        config_path = os.path.join(self.data_dir, "config.json")
+        with open(config_path, "w") as config_file:
+            json.dump(config_data, config_file, indent=4)
 
-    def load_config(self):
-        if os.path.exists(self.config_file):
-            with open(self.config_file, "r") as file:
+    def load_last_data(self):
+        config_path = os.path.join(self.data_dir, "config.json")
+        if os.path.exists(config_path):
+            with open(config_path, "r") as file:
                 try:
                     return json.load(file)
                 except json.JSONDecodeError:
                     pass
-        return {"last_time": "", "notes": ""}
+        return {}
 
     def save_activity(self, elapsed_time, notes):
         current_date = datetime.datetime.now().strftime("%Y-%m-%d")
         current_time = datetime.datetime.now().strftime("%H:%M:%S")
-        activity_file = os.path.join(self.base_dir, f"{current_date}.json")
+
+        activity_file = os.path.join(self.data_dir, f"{current_date}.json")
         activity_data = {}
 
         if os.path.exists(activity_file):
-            with open(activity_file, "r") as file:
+            with open(activity_file, "r") as activity_file_content:
                 try:
-                    activity_data = json.load(file)
+                    activity_data = json.load(activity_file_content)
                 except json.JSONDecodeError:
-                    pass
+                    activity_data = {}
 
         activity_data[current_time] = f"{elapsed_time} {notes}"
 
-        with open(activity_file, "w") as file:
-            json.dump(activity_data, file, indent=4)
+        with open(activity_file, "w") as activity_file_content:
+            json.dump(activity_data, activity_file_content, indent=4)

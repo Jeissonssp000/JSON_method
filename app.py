@@ -9,32 +9,17 @@ from PyQt5.QtWidgets import (
     QTextEdit,
 )
 from PyQt5.QtCore import QTimer, QTime, Qt
-import datetime
-import tempfile
-import pygame
-import base64
-import json
 import sys
-import os
-
-script_dir = os.path.dirname(os.path.abspath(__file__))
-src_dir = os.path.join(script_dir, "src")
-if src_dir not in sys.path:
-    sys.path.insert(0, src_dir)
-
+from src.audio_handler import AudioHandler
+from src.data_handler import DataHandler
 from src.audio import AUDIO_BASE64
 
 
 class App(QWidget):
     def __init__(self):
         super().__init__()
-        pygame.mixer.init()
-        self.audio_file = self.decode_audio_to_temp()
-        pygame.mixer.music.load(self.audio_file)
-
-        self.data_dir = "app_data"
-        if not os.path.exists(self.data_dir):
-            os.makedirs(self.data_dir)
+        self.audio_handler = AudioHandler(AUDIO_BASE64)
+        self.data_handler = DataHandler()
 
         self.remaining_time = QTime(0, 0, 0)
         self.initial_time = QTime(0, 0, 0)
@@ -91,7 +76,6 @@ class App(QWidget):
         self.load_last_data()
 
     def eventFilter(self, source, event):
-        # Detectar si el foco está en el QLineEdit y se presiona espacio o enter
         if source == self.time_input and event.type() == event.KeyPress:
             if event.key() in (Qt.Key_Space, Qt.Key_Return, Qt.Key_Enter):
                 self.start_stop_timer()
@@ -105,21 +89,17 @@ class App(QWidget):
         try:
             if ":" in input_time:
                 parts = input_time.split(":")
-                # Caso hh:mm:ss
                 if len(parts) == 3:
                     hours = int(parts[0]) if parts[0] else 0
                     minutes = int(parts[1]) if parts[1] else 0
                     seconds = int(parts[2]) if parts[2] else 0
-                # Caso mm:ss
                 elif len(parts) == 2:
                     minutes = int(parts[0]) if parts[0] else 0
                     seconds = int(parts[1]) if parts[1] else 0
             else:
-                # Caso ss
                 total_seconds = int(input_time)
                 minutes, seconds = divmod(total_seconds, 60)
 
-            # Ajustar los valores al formato QTime
             while seconds >= 60:
                 minutes += 1
                 seconds -= 60
@@ -136,7 +116,7 @@ class App(QWidget):
         if self.timer.isActive():
             self.timer.stop()
             self.start_stop_button.setText("Iniciar")
-            self.save_activity()  # Guardar datos al detener
+            self.save_activity()
         else:
             self.initial_time = self.parse_input_time()
             self.remaining_time = self.initial_time
@@ -151,7 +131,7 @@ class App(QWidget):
             self.remaining_time = QTime(0, 0, 0)
             self.update_remaining_label()
             self.save_activity()
-            pygame.mixer.music.play()
+            self.audio_handler.play_audio()
         else:
             self.remaining_time = self.remaining_time.addSecs(-1)
             self.update_remaining_label()
@@ -173,64 +153,23 @@ class App(QWidget):
         elapsed_seconds = initial_seconds - remaining_seconds
         return QTime(0, 0, 0).addSecs(elapsed_seconds).toString("hh:mm:ss")
 
-    def save_config(self):
-        config_data = {
-            "last_time": self.time_input.text(),
-            "notes": self.notes_text.toPlainText(),
-        }
-
-        with open("app_data/config.json", "w") as config_file:
-            json.dump(config_data, config_file, indent=4)
-
     def save_activity(self):
-        # Obtener la fecha y hora actuales
-        current_date = datetime.datetime.now().strftime("%Y-%m-%d")
-        current_time = datetime.datetime.now().strftime("%H:%M:%S")
         elapsed_time = self.calculate_elapsed_time()
         notes = self.notes_text.toPlainText()
-
-        # Archivo diario con el formato YYYY-MM-DD.json
-        activity_file = f"app_data/{current_date}.json"
-        activity_data = {}
-
-        # Cargar datos existentes si el archivo ya existe
-        if os.path.exists(activity_file):
-            with open(activity_file, "r") as activity_file_content:
-                try:
-                    activity_data = json.load(activity_file_content)
-                except json.JSONDecodeError:
-                    activity_data = {}
-
-        # Agregar la actividad con la hora como clave
-        activity_data[current_time] = f"{elapsed_time} {notes}"
-
-        # Guardar los datos en el archivo diario
-        with open(activity_file, "w") as activity_file_content:
-            json.dump(activity_data, activity_file_content, indent=4)
+        self.data_handler.save_activity(elapsed_time, notes)
 
     def load_last_data(self):
-        if os.path.exists("app_data/config.json"):
-            with open("app_data/config.json", "r") as file:
-                try:
-                    data = json.load(file)
-                    self.time_input.setText(data.get("last_time", ""))
-                    self.notes_text.setPlainText(data.get("notes", ""))
-                except json.JSONDecodeError:
-                    pass
-
-    def decode_audio_to_temp(self):
-        audio_data = base64.b64decode(AUDIO_BASE64)
-        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
-        temp_file.write(audio_data)
-        temp_file.close()
-        return temp_file.name
+        data = self.data_handler.load_last_data()
+        self.time_input.setText(data.get("last_time", ""))
+        self.notes_text.setPlainText(data.get("notes", ""))
 
     def closeEvent(self, event):
-        self.save_config()
+        self.data_handler.save_config(
+            self.time_input.text(), self.notes_text.toPlainText()
+        )
         if self.timer.isActive():
             self.save_activity()
-        if os.path.exists(self.audio_file):
-            os.remove(self.audio_file)
+        self.audio_handler.cleanup()
         event.accept()
 
 
