@@ -10,9 +10,11 @@ class NotifyHandler:
         self.data_handler = data_handler
         self.reminders = [
             {"time": "10:00", "message": "Toma agüita, es importante estar hidratado."},
-            {"time": "11:30", "message": "Estiramientos para el cuerpo."},
-            {"time": "13:00", "message": "Toma agüita, es importante estar hidratado."},
-            {"time": "11:53", "message": "Toma agüita, es importante estar hidratado."},
+            {"time": "11:00", "message": "Estiramientos para el cuerpo."},
+            {"time": "12:00", "message": "Toma agüita, es importante estar hidratado."},
+            {"time": "15:00", "message": "Toma agüita, es importante estar hidratado."},
+            {"time": "16:00", "message": "Estiramientos para el cuerpo."},
+            {"time": "17:00", "message": "Toma agüita, es importante estar hidratado."},
         ]
 
         self.notification_timer = QTimer()

@@ -1,3 +1,4 @@
+import sys
 from PyQt5.QtWidgets import (
     QApplication,
     QWidget,
@@ -7,9 +8,9 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QTextEdit,
+    QStyle,
 )
 from PyQt5.QtCore import Qt
-import sys
 from src.audio_handler import AudioHandler
 from src.data_handler import DataHandler
 from src.flash_handler import FlashHandler
@@ -41,8 +42,16 @@ class App(QWidget):
         self.time_input.setPlaceholderText("hh:mm:ss, mm:ss o ss")
         self.time_input.installEventFilter(self)
 
+        # Botón de añadir tiempo
+        self.add_time_button = QPushButton(self)
+        self.add_time_button.setIcon(self.style().standardIcon(QStyle.SP_ArrowRight))
+        self.add_time_button.setToolTip("Añadir tiempo al temporizador")
+        self.add_time_button.clicked.connect(self.add_time)
+        self.add_time_button.setEnabled(False)
+
         # Botón de iniciar/detener
-        self.start_stop_button = QPushButton("Iniciar", self)
+        self.start_stop_button = QPushButton(self)
+        self.start_stop_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
         self.start_stop_button.clicked.connect(self.start_stop_timer)
 
         # Label de tiempo restante
@@ -57,8 +66,9 @@ class App(QWidget):
         # Layout principal
         main_layout = QVBoxLayout()
 
-        # Layout para input y botón
+        # Layout para input y botones
         input_layout = QHBoxLayout()
+        input_layout.addWidget(self.add_time_button)
         input_layout.addWidget(self.time_input)
         input_layout.addWidget(self.start_stop_button)
 
@@ -68,31 +78,34 @@ class App(QWidget):
         main_layout.addWidget(self.notes_text)
 
         self.setLayout(main_layout)
-
-        # Cargar datos guardados
         self.load_last_data()
 
-    def eventFilter(self, source, event):
-        if source == self.time_input and event.type() == event.KeyPress:
-            if event.key() in (Qt.Key_Space, Qt.Key_Return, Qt.Key_Enter):
-                self.start_stop_timer()
-                return True
-        return super().eventFilter(source, event)
+    def add_time(self):
+        input_time = self.time_input.text().strip()
+        if input_time:
+            self.timer_handler.add_time(input_time)
 
     def start_stop_timer(self):
         if self.timer_handler.timer.isActive():
             self.timer_handler.stop_timer()
-            self.start_stop_button.setText("Iniciar")
+            self.start_stop_button.setIcon(
+                self.style().standardIcon(QStyle.SP_MediaPlay)
+            )
+            self.add_time_button.setEnabled(False)
             self.save_activity()
         else:
             self.timer_handler.start_timer(self.time_input.text().strip())
-            self.start_stop_button.setText("Detener")
+            self.start_stop_button.setIcon(
+                self.style().standardIcon(QStyle.SP_MediaStop)
+            )
+            self.add_time_button.setEnabled(True)
 
     def update_remaining_label(self, time):
         self.remaining_label.setText(time.toString("hh:mm:ss"))
 
     def on_timer_end(self):
-        self.start_stop_button.setText("Iniciar")
+        self.start_stop_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
+        self.add_time_button.setEnabled(False)
         self.save_activity()
         self.audio_handler.play_audio()
         self.flash_handler.start_flash()
