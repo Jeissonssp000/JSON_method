@@ -2,17 +2,17 @@ import base64
 import tempfile
 import pygame
 import os
+from .audio import AUDIO_BASE64
 
 
 class AudioHandler:
-    def __init__(self, audio_base64):
-        self.audio_base64 = audio_base64
+    def __init__(self):
         pygame.mixer.init()
         self.audio_file = self.decode_audio_to_temp()
         pygame.mixer.music.load(self.audio_file)
 
     def decode_audio_to_temp(self):
-        audio_data = base64.b64decode(self.audio_base64)
+        audio_data = base64.b64decode(AUDIO_BASE64)
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
         temp_file.write(audio_data)
         temp_file.close()

@@ -14,13 +14,12 @@ from src.audio_handler import AudioHandler
 from src.data_handler import DataHandler
 from src.flash_handler import FlashHandler
 from src.notify_handler import NotifyHandler
-from src.audio import AUDIO_BASE64
 
 
 class App(QWidget):
     def __init__(self):
         super().__init__()
-        self.audio_handler = AudioHandler(AUDIO_BASE64)
+        self.audio_handler = AudioHandler()
         self.data_handler = DataHandler()
 
         self.timer = QTimer(self)
