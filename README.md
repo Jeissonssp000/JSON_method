@@ -15,17 +15,9 @@ Este documento describe cómo crear un ejecutable de una aplicación Python util
 ## Requisitos Previos para el Repo
 - **Python 3.12.7** debe estar instalado en el sistema. (opt: pyenv ;D)
 - **Paquetes** instalar con:
-  
-  ```bash
-  pip install -r requirements.txt
-  ```
-
-### Archivo requirements.txt
-Para asegurar tener todas las dependencias nuevas y actualizar requirements.txt usar:
-
-```
-pip freeze > requirements.txt
-```
+   ```bash
+   pip install PyQt5 pyinstaller pygame
+   ```
 
 ## Instrucciones para Generar un Ejecutable
 
