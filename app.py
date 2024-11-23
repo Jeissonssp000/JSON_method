@@ -13,6 +13,7 @@ import sys
 from src.audio_handler import AudioHandler
 from src.data_handler import DataHandler
 from src.flash_handler import FlashHandler
+from src.notify_handler import NotifyHandler
 from src.audio import AUDIO_BASE64
 
 
@@ -22,10 +23,14 @@ class App(QWidget):
         self.audio_handler = AudioHandler(AUDIO_BASE64)
         self.data_handler = DataHandler()
 
+        self.timer = QTimer(self)
         self.remaining_time = QTime(0, 0, 0)
         self.initial_time = QTime(0, 0, 0)
 
         self.flash_handler = FlashHandler(self)
+        self.notify_handler = NotifyHandler(
+            self, self.timer, self.audio_handler, self.data_handler
+        )
         self.initUI()
 
     def initUI(self):
@@ -36,7 +41,6 @@ class App(QWidget):
         self.setWindowFlag(Qt.WindowStaysOnTopHint)
 
         # Timer
-        self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_timer)
         self.remaining_time = QTime(0, 0, 0)
 
