@@ -68,6 +68,11 @@ class TimerHandler:
             + additional_time.minute() * 60
             + additional_time.second()
         )
+        self.initial_time = self.initial_time.addSecs(
+            additional_time.hour() * 3600
+            + additional_time.minute() * 60
+            + additional_time.second()
+        )
         self.callback_update_label(self.remaining_time)
 
     def calculate_elapsed_time(self):
