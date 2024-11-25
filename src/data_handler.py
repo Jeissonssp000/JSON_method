@@ -1,11 +1,21 @@
 import json
 import os
 import datetime
+import sys
+
+
+def get_app_path():
+    if getattr(sys, "frozen", False):  # Si está empaquetado con PyInstaller
+        return os.path.dirname(sys.executable)
+    else:  # Si está en un entorno de desarrollo (sin empaquetar)
+        return os.path.dirname(os.path.abspath(__file__))
 
 
 class DataHandler:
     def __init__(self, data_dir="app_data"):
-        self.data_dir = data_dir
+        base_path = get_app_path()
+        self.data_dir = os.path.join(base_path, data_dir)
+
         if not os.path.exists(self.data_dir):
             os.makedirs(self.data_dir)
 
