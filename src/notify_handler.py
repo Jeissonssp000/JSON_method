@@ -8,15 +8,10 @@ class NotifyHandler:
         self.timer = timer
         self.audio_handler = audio_handler
         self.data_handler = data_handler
-        self.reminders = [
-            {"time": "10:00", "message": "Toma agüita, es importante estar hidratado."},
-            {"time": "11:00", "message": "Estiramientos para el cuerpo."},
-            {"time": "12:00", "message": "Toma agüita, es importante estar hidratado."},
-            {"time": "15:00", "message": "Toma agüita, es importante estar hidratado."},
-            {"time": "16:00", "message": "Estiramientos para el cuerpo."},
-            {"time": "17:00", "message": "Toma agüita, es importante estar hidratado."},
-        ]
 
+        config_data = self.data_handler.load_last_data()
+        self.reminders = config_data.get("reminders", [])
+        print(self.reminders)
         self.notification_timer = QTimer()
         self.notification_timer.timeout.connect(self.check_reminders)
         self.notification_timer.start(60000)

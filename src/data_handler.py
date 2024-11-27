@@ -20,12 +20,19 @@ class DataHandler:
             os.makedirs(self.data_dir)
 
     def save_config(self, time_input, notes_text):
-        config_data = {
-            "last_time": time_input,
-            "notes": notes_text,
-        }
-
         config_path = os.path.join(self.data_dir, "config.json")
+        if os.path.exists(config_path):
+            with open(config_path, "r") as config_file:
+                try:
+                    config_data = json.load(config_file)
+                except json.JSONDecodeError:
+                    config_data = {}
+        else:
+            config_data = {}
+
+        config_data["last_time"] = time_input
+        config_data["notes"] = notes_text
+
         with open(config_path, "w") as config_file:
             json.dump(config_data, config_file, indent=4)
 
@@ -37,7 +44,26 @@ class DataHandler:
                     return json.load(file)
                 except json.JSONDecodeError:
                     pass
-        return {}
+
+        # Configuración por defecto si no existe o está corrupto
+        default_data = {
+            "last_time": "",
+            "notes": "",
+            "reminders": [
+                {"time": "10:00", "message": "Toma agüita, es importante estar hidratado."},
+                {"time": "11:00", "message": "Estiramientos para el cuerpo."},
+                {"time": "12:00", "message": "Toma agüita, es importante estar hidratado."},
+                {"time": "15:00", "message": "Toma agüita, es importante estar hidratado."},
+                {"time": "16:00", "message": "Estiramientos para el cuerpo."},
+                {"time": "17:00", "message": "Toma agüita, es importante estar hidratado."},
+            ],
+        }
+
+        # Guardar el archivo con la configuración por defecto
+        with open(config_path, "w") as file:
+            json.dump(default_data, file, indent=4)
+
+        return default_data
 
     def save_activity(self, elapsed_time, notes):
         current_date = datetime.datetime.now().strftime("%Y-%m-%d")
