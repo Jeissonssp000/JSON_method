@@ -16,6 +16,7 @@ from src.data_handler import DataHandler
 from src.flash_handler import FlashHandler
 from src.notify_handler import NotifyHandler
 from src.timer_handler import TimerHandler
+from src.metrics_handler import MetricsHandler
 
 
 class App(QWidget):
@@ -30,6 +31,7 @@ class App(QWidget):
         self.notify_handler = NotifyHandler(
             self, self.timer_handler.timer, self.audio_handler, self.data_handler
         )
+        self.metrics_handler = MetricsHandler(self.data_handler.data_dir)
         self.initUI()
 
     def initUI(self):
@@ -41,6 +43,12 @@ class App(QWidget):
         self.time_input = QLineEdit(self)
         self.time_input.setPlaceholderText("hh:mm:ss, mm:ss o ss")
         self.time_input.installEventFilter(self)
+
+        # Botón de métricas
+        self.metrics_button = QPushButton(self)
+        self.metrics_button.setIcon(self.style().standardIcon(QStyle.SP_ArrowDown))
+        self.metrics_button.setToolTip("Abrir métricas de tiempos")
+        self.metrics_button.clicked.connect(self.open_metrics)
 
         # Botón de añadir tiempo
         self.add_time_button = QPushButton(self)
@@ -68,6 +76,7 @@ class App(QWidget):
 
         # Layout para input y botones
         input_layout = QHBoxLayout()
+        input_layout.addWidget(self.metrics_button)
         input_layout.addWidget(self.add_time_button)
         input_layout.addWidget(self.time_input)
         input_layout.addWidget(self.start_stop_button)
@@ -79,6 +88,9 @@ class App(QWidget):
 
         self.setLayout(main_layout)
         self.load_last_data()
+
+    def open_metrics(self):
+        self.metrics_handler.generate_metrics()
 
     def add_time(self):
         input_time = self.time_input.text().strip()
