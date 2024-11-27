@@ -67,7 +67,6 @@ class MetricsHandler:
 
             summary.append(
                 {
-                    "Archivo": file_name,
                     "Fecha": file_date,
                     "Horas": total_time,
                     "Pausas": pause_time,
@@ -82,7 +81,6 @@ class MetricsHandler:
 
         df_summary = pd.DataFrame(
             {
-                "Archivo": [day["Archivo"] for day in summary],
                 "Fecha": [day["Fecha"] for day in summary],
                 "Horas": [str(day["Horas"]) for day in summary],
                 "Pausas": [str(day["Pausas"]) for day in summary],
@@ -102,8 +100,22 @@ class MetricsHandler:
             if validation_messages
             else "<h2>No se encontraron problemas de validación.</h2>"
         )
+        html_styles = """
+        <style>
+            table {
+                border-collapse: collapse;
+            }
+            table, th, td {
+                border: 1px solid black;
+            }
+            th, td {
+                padding: 6px;
+                text-align: left;
+            }
+        </style>
+        """
         html_table = df_summary.to_html(index=False, justify="center")
-        html_content = f"{html_header}{html_validations}{html_table}"
+        html_content = f"{html_styles}{html_header}{html_validations}{html_table}"
 
         with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp_file:
             tmp_file.write(html_content.encode("utf-8"))
