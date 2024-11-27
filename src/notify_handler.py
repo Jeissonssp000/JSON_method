@@ -11,7 +11,6 @@ class NotifyHandler:
 
         config_data = self.data_handler.load_last_data()
         self.reminders = config_data.get("reminders", [])
-        print(self.reminders)
         self.notification_timer = QTimer()
         self.notification_timer.timeout.connect(self.check_reminders)
         self.notification_timer.start(60000)

@@ -12,6 +12,7 @@ class MetricsHandler:
 
     def generate_metrics(self):
         summary = []
+        validation_messages = []
 
         for file_name in os.listdir(self.data_dir):
             if file_name == "config.json" or not file_name.endswith(".json"):
@@ -37,9 +38,8 @@ class MetricsHandler:
 
                     if "Pausa" not in task_name:
                         if previous_end_time and current_start_time < previous_end_time:
-                            print(
-                                f"Archivo '{file_name}': "
-                                f"Tarea '{task_name}', fin: {current_end_time.time()} "
+                            validation_messages.append(
+                                f"Archivo '{file_name}': Tarea '{task_name}', fin: {current_end_time.time()}"
                             )
 
                         previous_end_time = current_end_time
@@ -55,7 +55,7 @@ class MetricsHandler:
                             shortest_task = {"name": task_name, "duration": task_duration}
 
                 except ValueError as e:
-                    print(
+                    validation_messages.append(
                         f"Error al procesar la tarea: {details} en el archivo {file_name}. Error: {e}"
                     )
                     continue
@@ -92,8 +92,21 @@ class MetricsHandler:
         )
 
         df_summary = df_summary.sort_values(by="Fecha", ascending=False)
-        html_content = df_summary.to_html(index=False, justify="center")
+
+        # Crear contenido HTML con los mensajes y la tabla
+        html_header = "<h1>Resumen de métricas</h1>"
+        html_validations = (
+            "<h2>Validaciones:</h2><ul>"
+            + "".join([f"<li>{msg}</li>" for msg in validation_messages])
+            + "</ul>"
+            if validation_messages
+            else "<h2>No se encontraron problemas de validación.</h2>"
+        )
+        html_table = df_summary.to_html(index=False, justify="center")
+        html_content = f"{html_header}{html_validations}{html_table}"
+
         with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp_file:
             tmp_file.write(html_content.encode("utf-8"))
             tmp_file_path = tmp_file.name
+
         webbrowser.open(f"file://{tmp_file_path}")
